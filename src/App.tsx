@@ -166,7 +166,7 @@ export default function App() {
               src="/profile.jpg" 
               alt="Profile" 
               onError={(e) => {
-                (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300";
+                (e.target as HTMLImageElement).src = "file:///C:/Users/A/Downloads/prof.jpeg";
               }}
               className="relative w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-2 border-gold/50 p-1"
             />
