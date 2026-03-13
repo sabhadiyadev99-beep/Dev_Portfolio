@@ -1,0 +1,60 @@
+{
+  "entities": {
+    "Project": {
+      "title": "Project",
+      "description": "A portfolio project.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "Project title" },
+        "description": { "type": "string", "description": "Project description" },
+        "mediaUrl": { "type": "string", "description": "URL of the image or video" },
+        "mediaType": { "type": "string", "enum": ["image", "video"] },
+        "liveLink": { "type": "string", "description": "Link to the live project" },
+        "techStack": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "number", "description": "Timestamp of creation" },
+        "authorUid": { "type": "string", "description": "UID of the admin who created it" }
+      },
+      "required": ["title", "description", "mediaUrl", "mediaType", "liveLink", "techStack", "createdAt", "authorUid"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "A review for a project.",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string", "description": "ID of the project being reviewed" },
+        "userId": { "type": "string", "description": "UID of the reviewer" },
+        "userName": { "type": "string", "description": "Name of the reviewer" },
+        "userPhoto": { "type": "string", "description": "Photo URL of the reviewer" },
+        "rating": { "type": "number", "description": "Rating from 1 to 5" },
+        "comment": { "type": "string", "description": "Review text" },
+        "createdAt": { "type": "number", "description": "Timestamp of creation" }
+      },
+      "required": ["projectId", "userId", "userName", "userPhoto", "rating", "comment", "createdAt"]
+    },
+    "User": {
+      "title": "User",
+      "description": "A user profile.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "user"] }
+      },
+      "required": ["email", "name", "role"]
+    }
+  },
+  "firestore": {
+    "/projects/{projectId}": {
+      "schema": { "$ref": "#/entities/Project" },
+      "description": "Collection of portfolio projects"
+    },
+    "/reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/Review" },
+      "description": "Collection of project reviews"
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Collection of user profiles"
+    }
+  }
+}
