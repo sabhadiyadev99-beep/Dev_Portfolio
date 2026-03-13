@@ -163,8 +163,11 @@ export default function App() {
           >
             <div className="absolute inset-0 rounded-full bg-gold blur-2xl opacity-20 group-hover:opacity-40 transition-opacity duration-500"></div>
             <img 
-              src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300" 
+              src="/profile.jpg" 
               alt="Profile" 
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "/profile.jpg";
+              }}
               className="relative w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-2 border-gold/50 p-1"
             />
           </motion.div>
