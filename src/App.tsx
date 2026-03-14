@@ -102,6 +102,9 @@ export default function App() {
     } catch (error: any) {
       if (error.code === 'auth/popup-closed-by-user') {
         console.log('Sign-in popup was closed by the user.');
+        alert('Sign-in was cancelled. If the popup closed immediately, please ensure your Vercel domain is added to Firebase Authorized Domains.');
+      } else if (error.code === 'auth/unauthorized-domain') {
+        alert('This domain is not authorized for Firebase Authentication. Please add your Vercel domain to Firebase Authorized Domains.');
       } else {
         console.error('Sign in error:', error);
         alert(`Failed to sign in: ${error.message}\n\nIf you are on Vercel, make sure to add this domain to Firebase Authorized Domains.`);
@@ -176,7 +179,7 @@ export default function App() {
           >
             <div className="absolute inset-0 rounded-full bg-gold blur-2xl opacity-20 group-hover:opacity-40 transition-opacity duration-500"></div>
             <img 
-              src="/profile.jpg" 
+              src="/profile.png" 
               alt="Profile" 
               onError={(e) => {
                 (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300";
