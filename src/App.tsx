@@ -104,7 +104,7 @@ export default function App() {
         console.log('Sign-in popup was closed by the user.');
       } else {
         console.error('Sign in error:', error);
-        alert('Failed to sign in. Please try again.');
+        alert(`Failed to sign in: ${error.message}\n\nIf you are on Vercel, make sure to add this domain to Firebase Authorized Domains.`);
       }
     }
   };
