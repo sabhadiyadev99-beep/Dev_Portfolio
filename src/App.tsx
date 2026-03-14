@@ -186,7 +186,7 @@ export default function App() {
             <div className="absolute inset-0 rounded-full bg-gold blur-2xl opacity-20 group-hover:opacity-40 transition-opacity duration-500"></div>
             <img 
               src="public/Untitled design (13).png"
-              alt="Profile" 
+              alt="DEV" 
               className="relative w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-2 border-gold/50 p-1 bg-charcoal"
               referrerPolicy="no-referrer"
             />
