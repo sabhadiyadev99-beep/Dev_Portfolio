@@ -179,12 +179,10 @@ export default function App() {
           >
             <div className="absolute inset-0 rounded-full bg-gold blur-2xl opacity-20 group-hover:opacity-40 transition-opacity duration-500"></div>
             <img 
-              src="/profile.png" 
+              src="/profile.png"
               alt="Profile" 
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300";
-              }}
-              className="relative w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-2 border-gold/50 p-1"
+              className="relative w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-2 border-gold/50 p-1 bg-charcoal"
+              referrerPolicy="no-referrer"
             />
           </motion.div>
           
@@ -276,7 +274,7 @@ export default function App() {
 
 // --- Components ---
 
-function ProjectCard({ project, index, isAdmin, onDelete, user }: { project: Project; index: number; isAdmin: boolean; onDelete: () => void; user: User | null }) {
+const ProjectCard: React.FC<{ project: Project; index: number; isAdmin: boolean; onDelete: () => void; user: User | null }> = ({ project, index, isAdmin, onDelete, user }) => {
   const [showReviews, setShowReviews] = useState(false);
 
   return (
@@ -440,7 +438,7 @@ function ReviewsModal({ project, user, onClose }: { project: Project; user: User
               {reviews.map(review => (
                 <div key={review.id} className="bg-charcoal p-4 rounded-xl border border-white/5">
                   <div className="flex items-center gap-3 mb-3">
-                    <img src={review.userPhoto || 'https://via.placeholder.com/40'} alt={review.userName} className="w-10 h-10 rounded-full" />
+                    <img src={review.userPhoto || `https://api.dicebear.com/7.x/initials/svg?seed=${review.userName}`} alt={review.userName} className="w-10 h-10 rounded-full" />
                     <div>
                       <p className="font-medium text-sm">{review.userName}</p>
                       <div className="flex text-gold">
