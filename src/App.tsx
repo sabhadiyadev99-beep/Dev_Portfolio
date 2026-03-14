@@ -5,9 +5,9 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, X, ExternalLink, Github, Linkedin, Mail, Upload, Image as ImageIcon, Film, Code2, Trash2, MessageSquare, Star, LogIn, LogOut } from 'lucide-react';
+import { Plus, X, ExternalLink, Github, Linkedin, Mail, Upload, Image as ImageIcon, Film, Code2, Trash2, MessageSquare, Star, LogIn, LogOut, Pencil, AlertCircle } from 'lucide-react';
 import { db, auth, signInWithGoogle, logOut } from './firebase';
-import { collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp, getDocs } from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp, getDocs, updateDoc } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
 
 // --- Types ---
@@ -39,6 +39,7 @@ const ADMIN_EMAIL = 'sabhadiyadev99@gmail.com';
 export default function App() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isAuthReady, setIsAuthReady] = useState(false);
@@ -69,30 +70,35 @@ export default function App() {
     return () => unsubscribe();
   }, [isAuthReady]);
 
-  const handleAddProject = async (newProjectData: Omit<Project, 'id' | 'createdAt' | 'authorUid'>) => {
+  const handleSaveProject = async (projectData: Omit<Project, 'id' | 'createdAt' | 'authorUid'>) => {
     if (!user || !isAdmin) return;
     try {
-      await addDoc(collection(db, 'projects'), {
-        ...newProjectData,
-        createdAt: Date.now(),
-        authorUid: user.uid
-      });
+      if (editingProject) {
+        await updateDoc(doc(db, 'projects', editingProject.id), {
+          ...projectData
+        });
+      } else {
+        await addDoc(collection(db, 'projects'), {
+          ...projectData,
+          createdAt: Date.now(),
+          authorUid: user.uid
+        });
+      }
       setIsModalOpen(false);
+      setEditingProject(null);
     } catch (error) {
-      console.error("Error adding project:", error);
-      alert("Failed to add project.");
+      console.error("Error saving project:", error);
+      alert("Failed to save project.");
     }
   };
 
   const handleDeleteProject = async (projectId: string) => {
     if (!user || !isAdmin) return;
-    if (window.confirm("Are you sure you want to delete this project?")) {
-      try {
-        await deleteDoc(doc(db, 'projects', projectId));
-      } catch (error) {
-        console.error("Error deleting project:", error);
-        alert("Failed to delete project.");
-      }
+    try {
+      await deleteDoc(doc(db, 'projects', projectId));
+    } catch (error) {
+      console.error("Error deleting project:", error);
+      alert("Failed to delete project.");
     }
   };
 
@@ -226,6 +232,10 @@ export default function App() {
                     index={index} 
                     isAdmin={isAdmin}
                     onDelete={() => handleDeleteProject(project.id)}
+                    onEdit={() => {
+                      setEditingProject(project);
+                      setIsModalOpen(true);
+                    }}
                     user={user}
                   />
                 ))}
@@ -261,10 +271,14 @@ export default function App() {
 
       {/* Add Project Modal */}
       <AnimatePresence>
-        {isModalOpen && isAdmin && (
+        {(isModalOpen || editingProject) && isAdmin && (
           <AddProjectModal 
-            onClose={() => setIsModalOpen(false)} 
-            onAdd={handleAddProject} 
+            onClose={() => {
+              setIsModalOpen(false);
+              setEditingProject(null);
+            }} 
+            onSave={handleSaveProject} 
+            initialData={editingProject}
           />
         )}
       </AnimatePresence>
@@ -274,8 +288,10 @@ export default function App() {
 
 // --- Components ---
 
-const ProjectCard: React.FC<{ project: Project; index: number; isAdmin: boolean; onDelete: () => void; user: User | null }> = ({ project, index, isAdmin, onDelete, user }) => {
+const ProjectCard: React.FC<{ project: Project; index: number; isAdmin: boolean; onDelete: () => void; onEdit: () => void; user: User | null }> = ({ project, index, isAdmin, onDelete, onEdit, user }) => {
   const [showReviews, setShowReviews] = useState(false);
+  const [showEditConfirm, setShowEditConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   return (
     <>
@@ -307,13 +323,22 @@ const ProjectCard: React.FC<{ project: Project; index: number; isAdmin: boolean;
           <div className="absolute inset-0 bg-gradient-to-t from-charcoal-light via-transparent to-transparent"></div>
           
           {isAdmin && (
-            <button 
-              onClick={onDelete}
-              className="absolute top-4 right-4 p-2 bg-red-500/80 hover:bg-red-600 text-white rounded-full backdrop-blur-sm transition-colors z-20"
-              title="Delete Project"
-            >
-              <Trash2 size={16} />
-            </button>
+            <div className="absolute top-4 right-4 flex gap-2 z-20">
+              <button 
+                onClick={() => setShowEditConfirm(true)}
+                className="p-2 bg-blue-500/80 hover:bg-blue-600 text-white rounded-full backdrop-blur-sm transition-colors"
+                title="Edit Project"
+              >
+                <Pencil size={16} />
+              </button>
+              <button 
+                onClick={() => setShowDeleteConfirm(true)}
+                className="p-2 bg-red-500/80 hover:bg-red-600 text-white rounded-full backdrop-blur-sm transition-colors"
+                title="Delete Project"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
           )}
         </div>
         
@@ -360,6 +385,30 @@ const ProjectCard: React.FC<{ project: Project; index: number; isAdmin: boolean;
             project={project} 
             user={user} 
             onClose={() => setShowReviews(false)} 
+          />
+        )}
+        {showEditConfirm && (
+          <ConfirmModal
+            title="Edit Project"
+            message="Are you sure you want to edit this project?"
+            confirmText="Yes, Edit"
+            onConfirm={() => {
+              setShowEditConfirm(false);
+              onEdit();
+            }}
+            onCancel={() => setShowEditConfirm(false)}
+          />
+        )}
+        {showDeleteConfirm && (
+          <ConfirmModal
+            title="Delete Project"
+            message="Are you sure you want to delete this project? This action cannot be undone."
+            confirmText="Yes, Delete"
+            onConfirm={() => {
+              setShowDeleteConfirm(false);
+              onDelete();
+            }}
+            onCancel={() => setShowDeleteConfirm(false)}
           />
         )}
       </AnimatePresence>
@@ -511,33 +560,49 @@ function ReviewsModal({ project, user, onClose }: { project: Project; user: User
   );
 }
 
-function AddProjectModal({ onClose, onAdd }: { onClose: () => void; onAdd: (p: Omit<Project, 'id' | 'createdAt' | 'authorUid'>) => void }) {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [liveLink, setLiveLink] = useState('');
-  const [techStack, setTechStack] = useState('');
-  const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
-  const [mediaUrl, setMediaUrl] = useState('');
-  const [previewUrl, setPreviewUrl] = useState('');
+function AddProjectModal({ onClose, onSave, initialData }: { onClose: () => void; onSave: (p: Omit<Project, 'id' | 'createdAt' | 'authorUid'>) => void; initialData?: Project | null }) {
+  const [title, setTitle] = useState(initialData?.title || '');
+  const [description, setDescription] = useState(initialData?.description || '');
+  const [liveLink, setLiveLink] = useState(initialData?.liveLink || '');
+  const [techStack, setTechStack] = useState(initialData?.techStack.join(', ') || '');
+  const [mediaType, setMediaType] = useState<'image' | 'video'>(initialData?.mediaType || 'image');
+  const [mediaUrl, setMediaUrl] = useState(initialData?.mediaUrl || '');
+  const [previewUrl, setPreviewUrl] = useState(initialData?.mediaUrl || '');
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // In a real app, you would upload the file to Firebase Storage here.
-      // For this prototype, we'll use a local object URL for preview,
-      // but you should replace this with actual upload logic.
-      // Since we can't easily upload to storage without setting it up, 
-      // we'll ask the user to provide a URL directly for now, or use a data URI.
+      const isImage = file.type.startsWith('image/');
+      const isVideo = file.type.startsWith('video/');
+      
+      if (!isImage && !isVideo) {
+        setUploadError('Unsupported file type. Please upload an image or video.');
+        return;
+      }
+
+      if (file.size > 500 * 1024) {
+        setUploadError('File is too large. Maximum size is 500KB.');
+        return;
+      }
+
+      setUploadError(null);
+      setIsUploading(true);
       
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64String = reader.result as string;
         setMediaUrl(base64String);
         setPreviewUrl(base64String);
-        setMediaType(file.type.startsWith('video/') ? 'video' : 'image');
+        setMediaType(isVideo ? 'video' : 'image');
+        setIsUploading(false);
+      };
+      reader.onerror = () => {
+        setUploadError('Failed to read file. Please try again.');
+        setIsUploading(false);
       };
       reader.readAsDataURL(file);
     }
@@ -547,7 +612,7 @@ function AddProjectModal({ onClose, onAdd }: { onClose: () => void; onAdd: (p: O
     e.preventDefault();
     if (!title || !description || !mediaUrl) return;
 
-    onAdd({
+    onSave({
       title,
       description,
       liveLink: liveLink || '#',
@@ -574,7 +639,7 @@ function AddProjectModal({ onClose, onAdd }: { onClose: () => void; onAdd: (p: O
         className="relative w-full max-w-2xl bg-charcoal-light border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
       >
         <div className="flex items-center justify-between p-6 border-b border-white/5">
-          <h2 className="text-xl font-display font-semibold text-gold">Add New Project</h2>
+          <h2 className="text-xl font-display font-semibold text-gold">{initialData ? 'Edit Project' : 'Add New Project'}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
             <X size={24} />
           </button>
@@ -621,6 +686,12 @@ function AddProjectModal({ onClose, onAdd }: { onClose: () => void; onAdd: (p: O
                   className="hidden" 
                 />
               </div>
+              {uploadError && (
+                <div className="mt-2 flex items-center gap-2 text-red-400 text-sm">
+                  <AlertCircle size={16} />
+                  <span>{uploadError}</span>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -689,7 +760,47 @@ function AddProjectModal({ onClose, onAdd }: { onClose: () => void; onAdd: (p: O
             disabled={!title || !description || !mediaUrl}
             className="px-6 py-2.5 rounded-lg font-medium bg-gold text-black hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-[0_0_15px_rgba(255,215,0,0.3)] hover:shadow-[0_0_25px_rgba(255,215,0,0.5)]"
           >
-            Publish Project
+            {initialData ? 'Save Changes' : 'Publish Project'}
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function ConfirmModal({ title, message, confirmText, cancelText, onConfirm, onCancel }: { title: string, message: string, confirmText?: string, cancelText?: string, onConfirm: () => void, onCancel: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onCancel}
+        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+      ></motion.div>
+      
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className="relative w-full max-w-sm bg-charcoal-light border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+      >
+        <div className="p-6">
+          <h2 className="text-xl font-display font-semibold text-white mb-2">{title}</h2>
+          <p className="text-gray-400 text-sm">{message}</p>
+        </div>
+        <div className="p-6 border-t border-white/5 bg-charcoal flex justify-end gap-3">
+          <button 
+            onClick={onCancel}
+            className="px-4 py-2 rounded-lg font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+          >
+            {cancelText || 'Cancel'}
+          </button>
+          <button 
+            onClick={onConfirm}
+            className="px-4 py-2 rounded-lg font-medium bg-gold text-black hover:bg-yellow-400 transition-colors shadow-[0_0_15px_rgba(255,215,0,0.3)] hover:shadow-[0_0_25px_rgba(255,215,0,0.5)]"
+          >
+            {confirmText || 'Confirm'}
           </button>
         </div>
       </motion.div>
