@@ -96,6 +96,19 @@ export default function App() {
     }
   };
 
+  const handleSignIn = async () => {
+    try {
+      await signInWithGoogle();
+    } catch (error: any) {
+      if (error.code === 'auth/popup-closed-by-user') {
+        console.log('Sign-in popup was closed by the user.');
+      } else {
+        console.error('Sign in error:', error);
+        alert('Failed to sign in. Please try again.');
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-charcoal text-white selection:bg-gold selection:text-black">
       {/* Header */}
@@ -141,7 +154,7 @@ export default function App() {
               </div>
             ) : (
               <button
-                onClick={signInWithGoogle}
+                onClick={handleSignIn}
                 className="flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full font-medium hover:bg-gray-200 transition-colors"
               >
                 <LogIn size={18} />
@@ -166,7 +179,7 @@ export default function App() {
               src="/profile.jpg" 
               alt="Profile" 
               onError={(e) => {
-                (e.target as HTMLImageElement).src = "file:///C:/Users/A/Downloads/prof.jpeg";
+                (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300";
               }}
               className="relative w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-2 border-gold/50 p-1"
             />
